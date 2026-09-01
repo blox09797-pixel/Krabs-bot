@@ -6,10 +6,11 @@ const {
   Routes,
   SlashCommandBuilder,
   EmbedBuilder
-} = require("discord.js");
+require("dotenv").config();
 
 const TOKEN = process.env.DISCORD_TOKEN;
 const CLIENT_ID = process.env.CLIENT_ID;
+
 console.log("TOKEN vorhanden:", !!TOKEN);
 console.log("CLIENT_ID vorhanden:", !!CLIENT_ID);
 
