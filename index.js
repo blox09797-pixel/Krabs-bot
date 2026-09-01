@@ -10,6 +10,8 @@ const {
 
 const TOKEN = process.env.DISCORD_TOKEN;
 const CLIENT_ID = process.env.CLIENT_ID;
+console.log("TOKEN vorhanden:", !!TOKEN);
+console.log("CLIENT_ID vorhanden:", !!CLIENT_ID);
 
 if (!TOKEN || !CLIENT_ID) {
   console.error("❌ DISCORD_TOKEN oder CLIENT_ID fehlt!");
