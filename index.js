@@ -1,12 +1,11 @@
+require("dotenv").config();
+
 const {
   Client,
   GatewayIntentBits,
   PermissionsBitField,
-  REST,
-  Routes,
-  SlashCommandBuilder,
-  EmbedBuilder
-require("dotenv").config();
+  SlashCommandBuilder
+} = require("discord.js");
 
 const TOKEN = process.env.DISCORD_TOKEN;
 const CLIENT_ID = process.env.CLIENT_ID;
@@ -28,280 +27,313 @@ const client = new Client({
   ]
 });
 
-// 🦀 Krabs-Antworten
-const krabsAntworten = [
-  "ARRR! Was gibt's, Matrose?! 🦀💰",
-  "Was willst du denn von mir?! Ich bin beschäftigt, Geld zu zählen! 💰",
-  "Hast du etwa Profit gesagt?! 👀💰",
-  "ARRR! Immer schön den Regeln folgen, Matrose! 🦀",
-  "Keine Panik! Mr. Krabs... äh, der Krabs Bot ist da! 🦀",
-  "Das kostet dich normalerweise 5 Dollar... aber heute hast du Glück! 💰",
-  "PLANKTON?! Wo?! 😱🦀",
-  "Zeit ist Geld, Matrose! ⏰💰"
-];
-
 const commands = [
   new SlashCommandBuilder()
     .setName("krabs")
-    .setDescription("Sprich mit dem Krabs Bot")
+    .setDescription("Krabs antwortet dir!")
     .addStringOption(option =>
       option
         .setName("nachricht")
-        .setDescription("Was möchtest du Krabs sagen?")
+        .setDescription("Was willst du Krabs sagen?")
         .setRequired(true)
     ),
 
   new SlashCommandBuilder()
     .setName("hilfe")
-    .setDescription("Zeigt alle Krabs-Bot-Befehle"),
+    .setDescription("Zeigt alle Krabs-Befehle"),
 
   new SlashCommandBuilder()
     .setName("regeln")
-    .setDescription("Zeigt die Clan-Regeln"),
+    .setDescription("Zeigt die Krabs-Clan Discord-Regeln"),
 
   new SlashCommandBuilder()
     .setName("info")
-    .setDescription("Zeigt Informationen über den Krabs Clan"),
+    .setDescription("Infos über den Krabs Clan"),
 
   new SlashCommandBuilder()
     .setName("warn")
-    .setDescription("Warnt ein Mitglied")
+    .setDescription("Warnt einen User")
     .addUserOption(option =>
-      option.setName("mitglied").setDescription("Mitglied").setRequired(true)
+      option
+        .setName("user")
+        .setDescription("User auswählen")
+        .setRequired(true)
     )
     .addStringOption(option =>
-      option.setName("grund").setDescription("Grund").setRequired(true)
+      option
+        .setName("grund")
+        .setDescription("Grund für die Warnung")
+        .setRequired(true)
     ),
 
   new SlashCommandBuilder()
     .setName("kick")
-    .setDescription("Kickt ein Mitglied")
+    .setDescription("Kickt einen User")
     .addUserOption(option =>
-      option.setName("mitglied").setDescription("Mitglied").setRequired(true)
+      option
+        .setName("user")
+        .setDescription("User auswählen")
+        .setRequired(true)
     )
     .addStringOption(option =>
-      option.setName("grund").setDescription("Grund").setRequired(false)
+      option
+        .setName("grund")
+        .setDescription("Grund")
+        .setRequired(false)
     ),
 
   new SlashCommandBuilder()
     .setName("ban")
-    .setDescription("Bannt ein Mitglied")
+    .setDescription("Bannt einen User")
     .addUserOption(option =>
-      option.setName("mitglied").setDescription("Mitglied").setRequired(true)
+      option
+        .setName("user")
+        .setDescription("User auswählen")
+        .setRequired(true)
     )
     .addStringOption(option =>
-      option.setName("grund").setDescription("Grund").setRequired(false)
+      option
+        .setName("grund")
+        .setDescription("Grund")
+        .setRequired(false)
     ),
 
   new SlashCommandBuilder()
     .setName("timeout")
-    .setDescription("Gibt einem Mitglied einen Timeout")
+    .setDescription("Gibt einem User einen Timeout")
     .addUserOption(option =>
-      option.setName("mitglied").setDescription("Mitglied").setRequired(true)
+      option
+        .setName("user")
+        .setDescription("User auswählen")
+        .setRequired(true)
     )
     .addIntegerOption(option =>
       option
         .setName("minuten")
         .setDescription("Dauer in Minuten")
         .setRequired(true)
-        .setMinValue(1)
-        .setMaxValue(40320)
     )
+];
+
+const krabsReplies = [
+  "🦀 Arrr! Geld riecht immer nach Arbeit! 💰",
+  "🦀 Was ist los, Matrose? Mach hinne!",
+  "🦀 Zeit ist Geld – und davon haben wir nicht genug! 💰",
+  "🦀 Arrr, der Clan braucht dich!",
+  "🦀 Keine Panik! Krabs hat alles unter Kontrolle. 🦀",
+  "🦀 Wer hat hier nach Krabs gerufen?!",
+  "🦀 Ordnung im Clan, sonst wird die Schatzkiste leer! 💰",
+  "🦀 Arrr! Das klingt nach einem Geschäft!",
+  "🦀 Erst die Arbeit, dann die Schatzkiste!",
+  "🦀 Krabs ist da. Jetzt kann nichts mehr schiefgehen! 🦀"
 ];
 
 client.once("ready", async () => {
   console.log(`🦀 Krabs Bot ist online als ${client.user.tag}`);
 
-  const rest = new REST({ version: "10" }).setToken(TOKEN);
-
   try {
-    await rest.put(
-      Routes.applicationCommands(CLIENT_ID),
-      { body: commands.map(command => command.toJSON()) }
+    await client.application.commands.set(
+      commands.map(command => command.toJSON())
     );
 
     console.log("✅ Slash-Befehle registriert!");
   } catch (error) {
-    console.error("❌ Fehler beim Registrieren:", error);
+    console.error("❌ Fehler beim Registrieren der Slash-Befehle:", error);
   }
 });
 
 client.on("interactionCreate", async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
-  const command = interaction.commandName;
+  const { commandName } = interaction;
 
-  if (command === "krabs") {
-    const text = interaction.options.getString("nachricht");
-    const antwort =
-      krabsAntworten[Math.floor(Math.random() * krabsAntworten.length)];
+  if (commandName === "krabs") {
+    const message = interaction.options.getString("nachricht");
+
+    const reply =
+      krabsReplies[Math.floor(Math.random() * krabsReplies.length)];
 
     await interaction.reply(
-      `🦀 **Krabs Bot:** ${antwort}\n\n💬 *Du hast gesagt:* ${text}`
+      `🦀 **Krabs:** ${reply}\n\n📩 Deine Nachricht: ${message}`
     );
-    return;
   }
 
-  if (command === "hilfe") {
-    const embed = new EmbedBuilder()
-      .setTitle("🦀 Krabs Bot – Hilfe")
-      .setDescription(
-        "**Befehle:**\n\n" +
-        "🦀 `/krabs <nachricht>` – Sprich mit Krabs\n" +
+  if (commandName === "hilfe") {
+    await interaction.reply({
+      content:
+        "🦀 **Krabs Clan – Befehle**\n\n" +
+        "💰 `/krabs <nachricht>` – Krabs antwortet\n" +
         "📜 `/regeln` – Clan-Regeln\n" +
         "ℹ️ `/info` – Clan-Infos\n" +
-        "🆘 `/hilfe` – Diese Übersicht\n" +
-        "⚠️ `/warn` – Mitglied verwarnen\n" +
-        "👢 `/kick` – Mitglied kicken\n" +
-        "🔨 `/ban` – Mitglied bannen\n" +
-        "🔇 `/timeout` – Mitglied timeouten"
-      );
-
-    await interaction.reply({ embeds: [embed] });
-    return;
+        "❓ `/hilfe` – Diese Hilfe\n\n" +
+        "🛡️ **Moderation:**\n" +
+        "`/warn` – User warnen\n" +
+        "`/kick` – User kicken\n" +
+        "`/ban` – User bannen\n" +
+        "`/timeout` – User timeouten",
+      ephemeral: true
+    });
   }
 
-  if (command === "regeln") {
+  if (commandName === "regeln") {
     await interaction.reply(
-      "🦀 **KRABS CLAN – REGELN** 🦀\n\n" +
-      "🤝 Respekt gegenüber allen Mitgliedern\n" +
-      "🚫 Kein Spam oder unnötiges Pingen\n" +
-      "🤫 Interne Clan-Infos bleiben intern\n" +
-      "⚔️ Kein unnötiger Beef\n" +
-      "🎤 Kein absichtliches Stören im Voice\n" +
-      "🦀 Zusammenhalten und Spaß haben!\n\n" +
-      "💰 **Zeit ist Geld, Matrosen!**"
+      "🦀 **KRABS CLAN – DISCORD REGELN** 🦀\n\n" +
+      "1️⃣ Respekt gegenüber allen Mitgliedern.\n" +
+      "2️⃣ Kein Spam oder unnötiges Pingen.\n" +
+      "3️⃣ Benutzt die richtigen Channels.\n" +
+      "4️⃣ Kein unnötiger Beef im Clan.\n" +
+      "5️⃣ Keine privaten Informationen anderer weitergeben.\n" +
+      "6️⃣ Voice-Chat: nicht absichtlich nerven oder schreien.\n" +
+      "7️⃣ Entscheidungen der Clan-Leitung respektieren.\n" +
+      "8️⃣ Habt Spaß und bleibt fair! 🦀\n\n" +
+      "💰 **Wer die Regeln bricht, zahlt die Krabben-Steuer!**"
     );
-    return;
   }
 
-  if (command === "info") {
+  if (commandName === "info") {
     await interaction.reply(
       "🦀 **KRABS CLAN** 🦀\n\n" +
-      "🎮 Hugo SMP\n" +
-      "💰 Profit seit Tag 1\n" +
-      "🦀 Zusammenhalt steht an erster Stelle\n\n" +
-      "**ARRR!** Willkommen an Bord, Matrose!"
+      "⛏️ Minecraft: Hugo SMP\n" +
+      "💰 Clan: Krabs Clan\n" +
+      "⚓ Gemeinsam spielen, bauen und gewinnen!\n\n" +
+      "🦀 **Arrr – willkommen an Bord!**"
     );
-    return;
   }
 
   if (
-    ["warn", "kick", "ban", "timeout"].includes(command) &&
+    ["warn", "kick", "ban", "timeout"].includes(commandName) &&
     !interaction.member.permissions.has(
       PermissionsBitField.Flags.ModerateMembers
     )
   ) {
-    await interaction.reply({
-      content: "🦀 Arrr! Du hast dafür keine Berechtigung, Matrose! 🚫",
+    return interaction.reply({
+      content: "❌ Du hast keine Berechtigung für diesen Befehl.",
       ephemeral: true
     });
-    return;
   }
 
-  if (command === "warn") {
-    const member = interaction.options.getMember("mitglied");
-    const grund = interaction.options.getString("grund");
+  if (commandName === "warn") {
+    const user = interaction.options.getUser("user");
+    const reason = interaction.options.getString("grund");
 
     await interaction.reply(
-      `⚠️ **VERWARNUNG**\n🦀 ${member}\n📄 Grund: ${grund}\n\n💰 Benehmt euch, Matrosen!`
+      `⚠️ **Verwarnung!**\n${user} wurde verwarnt.\n📋 Grund: ${reason}`
     );
-    return;
   }
 
-  if (command === "kick") {
-    const member = interaction.options.getMember("mitglied");
-    const grund =
+  if (commandName === "kick") {
+    const user = interaction.options.getUser("user");
+    const reason =
       interaction.options.getString("grund") || "Kein Grund angegeben";
 
-    if (!member || !member.kickable) {
-      await interaction.reply({
-        content: "🦀 Diesen Matrosen kann ich nicht kicken!",
+    const member = await interaction.guild.members
+      .fetch(user.id)
+      .catch(() => null);
+
+    if (!member) {
+      return interaction.reply({
+        content: "❌ User wurde nicht gefunden.",
         ephemeral: true
       });
-      return;
     }
 
-    await member.kick(grund);
+    try {
+      await member.kick(reason);
 
-    await interaction.reply(
-      `👢 **Gekickt!**\n🦀 ${member.user.tag}\n📄 Grund: ${grund}`
-    );
-    return;
+      await interaction.reply(
+        `👢 ${user.tag} wurde aus dem Clan gekickt.\n📋 Grund: ${reason}`
+      );
+    } catch {
+      await interaction.reply({
+        content: "❌ Ich konnte diesen User nicht kicken.",
+        ephemeral: true
+      });
+    }
   }
 
-  if (command === "ban") {
-    const member = interaction.options.getMember("mitglied");
-    const grund =
+  if (commandName === "ban") {
+    const user = interaction.options.getUser("user");
+    const reason =
       interaction.options.getString("grund") || "Kein Grund angegeben";
 
-    if (!member || !member.bannable) {
+    try {
+      await interaction.guild.members.ban(user.id, { reason });
+
+      await interaction.reply(
+        `🔨 ${user.tag} wurde gebannt.\n📋 Grund: ${reason}`
+      );
+    } catch {
       await interaction.reply({
-        content: "🦀 Diesen Matrosen kann ich nicht bannen!",
+        content: "❌ Ich konnte diesen User nicht bannen.",
         ephemeral: true
       });
-      return;
     }
-
-    await member.ban({ reason: grund });
-
-    await interaction.reply(
-      `🔨 **Gebannt!**\n🦀 ${member.user.tag}\n📄 Grund: ${grund}`
-    );
-    return;
   }
 
-  if (command === "timeout") {
-    const member = interaction.options.getMember("mitglied");
-    const minuten = interaction.options.getInteger("minuten");
+  if (commandName === "timeout") {
+    const user = interaction.options.getUser("user");
+    const minutes = interaction.options.getInteger("minuten");
 
-    if (!member || !member.moderatable) {
-      await interaction.reply({
-        content: "🦀 Diesen Matrosen kann ich nicht timeouten!",
+    if (minutes < 1 || minutes > 40320) {
+      return interaction.reply({
+        content: "❌ Die Dauer muss zwischen 1 und 40320 Minuten liegen.",
         ephemeral: true
       });
-      return;
     }
 
-    await member.timeout(
-      minuten * 60 * 1000,
-      `Krabs Bot Timeout: ${minuten} Minuten`
-    );
+    const member = await interaction.guild.members
+      .fetch(user.id)
+      .catch(() => null);
 
-    await interaction.reply(
-      `🔇 **Timeout!**\n🦀 ${member.user.tag}\n⏱️ ${minuten} Minuten`
-    );
+    if (!member) {
+      return interaction.reply({
+        content: "❌ User wurde nicht gefunden.",
+        ephemeral: true
+      });
+    }
+
+    try {
+      await member.timeout(
+        minutes * 60 * 1000,
+        "Krabs Clan Moderation"
+      );
+
+      await interaction.reply(
+        `⏰ ${user.tag} hat einen Timeout für **${minutes} Minuten** bekommen.`
+      );
+    } catch {
+      await interaction.reply({
+        content: "❌ Ich konnte diesem User keinen Timeout geben.",
+        ephemeral: true
+      });
+    }
   }
 });
 
-// 🦀 Automatische Antwort auf "Krabs"
 client.on("messageCreate", async message => {
   if (message.author.bot) return;
 
   if (message.content.toLowerCase().includes("krabs")) {
-    if (Math.random() < 0.25) {
-      const antwort =
-        krabsAntworten[Math.floor(Math.random() * krabsAntworten.length)];
+    if (Math.random() <= 0.25) {
+      const reply =
+        krabsReplies[Math.floor(Math.random() * krabsReplies.length)];
 
-      await message.reply(`🦀 ${antwort}`);
+      await message.reply(`🦀 ${reply}`);
     }
   }
 });
 
 client.on("guildMemberAdd", async member => {
-  try {
-    const channel = member.guild.systemChannel;
+  const channel = member.guild.systemChannel;
 
-    if (channel) {
-      await channel.send(
-        `🦀 **ARRR! Ein neuer Matrose ist angekommen!**\n` +
-        `Willkommen ${member}! 💰\n` +
-        `Lies zuerst die Regeln und dann: AB AUFS DECK! ⚓`
-      );
-    }
-  } catch (error) {
-    console.error("Fehler bei Begrüßung:", error);
-  }
+  if (!channel) return;
+
+  await channel.send(
+    `🦀 **Arrr, ${member.user.username}!**\n\n` +
+    `Willkommen im **Krabs Clan**! 💰⚓\n` +
+    `Mach es dir gemütlich und halt dich an die Regeln.\n\n` +
+    `🦀 Viel Spaß an Bord!`
+  );
 });
 
 client.login(TOKEN);
